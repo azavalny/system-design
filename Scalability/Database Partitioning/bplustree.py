@@ -190,31 +190,28 @@ class BPlusTree:
         
 
     def _split_internal(self, internal: InternalNode):
-        """
-        Split an internal node.
-        Steps:
-        - choose mid key to promote
-        - left keeps keys[:mid], children[:mid+1]
-        - right gets keys[mid+1:], children[mid+1:]
-        - promoted key is internal.keys[mid]
-        - call _insert_in_parent on left, promoted_key, right
-        """
-        split = math.ceil(self.order/2)-1
-        promoted_key = internal.keys[split]
+        # Make copies BEFORE modifying internal
+        old_keys = internal.keys[:]
+        old_children = internal.children[:]
 
+        split = math.ceil(self.order/2) - 1
+        promoted_key = old_keys[split]
 
+        # Left keeps the original object
         left = internal
-        left.keys = left[:split]
-        left.children = left.children[:split+1]
+        left.keys = old_keys[:split]
+        left.children = old_children[:split+1]
 
+        # Right is new
         right = InternalNode(self.order)
-        right.keys = internal.keys[split+1:]
-        right.children = internal.children[split+1:]
+        right.keys = old_keys[split+1:]
+        right.children = old_children[split+1:]
 
         for child in right.children:
             child.parent = right
 
         self._insert_in_parent(left, promoted_key, right)
+
 
 
 
