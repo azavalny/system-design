@@ -1,3 +1,5 @@
+# filename: distributed_sharding_batched.py
+
 from bplustree import BPlusTree
 import time
 import random
@@ -8,26 +10,24 @@ from multiprocessing import Process, Queue
 # ---------------------------------------------------------
 def shard_worker(insert_queue: Queue, query_queue: Queue):
     tree = BPlusTree(order=4)
-    
-    # Process insert tasks
+
+    # Process batched insert tasks
     while True:
         task = insert_queue.get()
         if task == "DONE_INSERT":
             break
-        key, value = task
-        tree.insert(key, value)
-    
-    # Process search tasks
-    while True:
-        query = query_queue.get()
-        if query == "DONE_QUERY":
-            break
-        results = []
-        for key in query:
-            results.append(tree.search(key))
-    
-    
+        # task is a list of (key, value) tuples
+        for k, v in task:
+            tree.insert(k, v)
 
+    # Process batched query tasks
+    while True:
+        task = query_queue.get()
+        if task == "DONE_QUERY":
+            break
+        # task is a list of keys to search
+        results = [tree.search(k) for k in task]
+     
 
 # ---------------------------------------------------------
 # Generate test data
@@ -39,7 +39,7 @@ def generate_test_data(N=1000000):
     return keys, values
 
 # ---------------------------------------------------------
-# Single-Tree Experiment (one B+ tree)
+# Single-Tree Experiment
 # ---------------------------------------------------------
 def run_single_tree_experiment(keys, values, query_keys):
     tree = BPlusTree(order=4)
@@ -62,64 +62,57 @@ def run_single_tree_experiment(keys, values, query_keys):
     }
 
 # ---------------------------------------------------------
-# Distributed Sharded Experiment
+# Distributed Sharded Experiment (batched)
 # ---------------------------------------------------------
 def run_distributed_sharded_experiment(keys, values, query_keys, num_shards=3):
-    insert_queues = [Queue() for _ in range(num_shards)] #keys to insert
-    query_queues = [Queue() for _ in range(num_shards)] #keys to search
+    insert_queues = [Queue() for _ in range(num_shards)]
+    query_queues = [Queue() for _ in range(num_shards)]
 
 
-    # Launch shard processes with EMPTY queues. each shard gets an empty queuue
+    # Launch shard processes
     processes = []
     for i in range(num_shards):
         p = Process(target=shard_worker, args=(insert_queues[i], query_queues[i]))
         p.start()
         processes.append(p)
 
-
-    
-    # Partition data for each shard
     t1 = time.time()
+    # Partition data into shards
     shard_kvs = [[] for _ in range(num_shards)]
     for k, v in zip(keys, values):
         shard_kvs[k % num_shards].append((k, v))
 
-    # Send inserts
+    # ---------------- Batched Inserts ----------------
     
-    for i in range(num_shards): #we pass inserts of each shard in shard queue
-        for kv in shard_kvs[i]:
-            insert_queues[i].put(kv)
+    for i in range(num_shards):
+        insert_queues[i].put(shard_kvs[i])       # send entire shard as batch
         insert_queues[i].put("DONE_INSERT")
-    t2 = time.time()
 
-    t3 = time.time()
-    # Partition query keys for each shard
+    # Partition query keys into shards
     shard_queries = [[] for _ in range(num_shards)]
     for k in query_keys:
         shard_queries[k % num_shards].append(k)
 
-    # Send queries
+    # ---------------- Batched Queries ----------------
     for i in range(num_shards):
-        query_queues[i].put(shard_queries[i])
+        query_queues[i].put(shard_queries[i])   # send all queries as batch
         query_queues[i].put("DONE_QUERY")
-    
-
-    t4 = time.time()
+   
+   
 
     # Join processes
     for p in processes:
         p.join()
-
+    t4 = time.time()
     return {
-        "insert_time": t2 - t1,
-        "search_time": t4 - t3,
+        "total_time": t4 - t1,
     }
 
 # ---------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    N = 1000000  # number of keys
+    N = 1000000  # total keys
     keys, values = generate_test_data(N)
     query_keys = random.sample(keys, 1000)
 
@@ -130,9 +123,8 @@ if __name__ == "__main__":
     print(f"Single-tree search time: {single['search_time']:.6f} sec")
 
     # --------------- Distributed Sharded ----------------
-    print("\nRunning distributed sharded experiment...")
+    print("\nRunning distributed sharded experiment (batched)...")
     distributed = run_distributed_sharded_experiment(keys, values, query_keys, num_shards=3)
-    print(f"Distributed sharded insert time: {distributed['insert_time']:.6f} sec")
-    print(f"Distributed sharded search time: {distributed['search_time']:.6f} sec")
+    print(f"Distributed sharded total time: {distributed['total_time']:.6f} sec")
 
 
