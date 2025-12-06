@@ -102,7 +102,7 @@ def products_max_age():
 def products_no_store():
     products = fetch_products()
     response = make_response(jsonify(products))
-    response.headers['cache-control'] = 'no-store'
+    response.headers['cache-control'] = 'no-store, max-age=60'
     return response
 
 @app.route("/products/no-cache")
