@@ -44,11 +44,11 @@ Latency acts as a bottleneck for throughput which is why you should improve it f
 
 Higher throughput means you can support more users greater than the peak
 
-![](Performance/latency.png)
+![](performance/latency.png)
 Tail latency is an important metric that measures 99th, 99.9th... response times to model how well your application handles peak load
 
 
-![](Performance/amdahls_gunther_law.png)
+![](performance/amdahls_gunther_law.png)
 
 Amdahl's law models the concurrency speedup by using more threads. After an initial sharp speedup, you will notice diminishing returns of concurrency because of the overhead of managing the threads as well as CPU context switching.
 
@@ -57,6 +57,8 @@ Gunther's law is Amdahl's law by taking into account coherence delay (caching of
 
 
 ## Scalability
+
+
 
 
 ## Databases
