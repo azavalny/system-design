@@ -8,6 +8,7 @@ System design, architecture, and databases explained from the *Software Architec
     * Combination of wait/idle time for other resources and processing time of your programs
     * Response time is the result of what the client sees including latency + network delay to transport the result to the user
 * Idempotence - send same request twice, get same result with no side effects
+* Eventual consistency - A change in the data in one location will eventually be updated in every other location, but reads from other locations may not yet have the updated value
 
 It's best to organize software into:
 * Client - part of backend where the request is handled
@@ -124,7 +125,7 @@ Duplicating databases or components in general results in redundancy to increase
 
 * Each of these are usually done asynchronously, as to not slow follower writes to wait for confirmation from followers
 
-1. Leader replication - choose 1 database to be the leader who accepts all writes from client and the rest of the databases are followers that accepts all reads from client
+1. Leader replication - choose 1 database to be the leader who accepts all writes (can also process reads) from client and the rest of the databases are followers that accepts all reads from client
 * Increase read throughput
 * Increase durability by copying our data
 * Leader sends replication logs (Write Ahead Log) of ordered data changes to followers to help them stay synchronized and achieve consistency if follower goes down
