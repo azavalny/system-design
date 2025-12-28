@@ -15,7 +15,7 @@ from typing import List, Optional, Any, Tuple
 
 class Node:
     def __init__(self, order: int, is_leaf: bool = False):
-        self.order = order
+        self.order = order #
         self.is_leaf = is_leaf
         self.keys: List[int] = [] # sorted list of keys
         # children: for internal nodes -> list of Node
@@ -83,7 +83,10 @@ class BPlusTree:
         return None
 
     def range_query(self, lo: int, hi: int) -> List[Tuple[int, Any]]:
-        """Return list of (key,value) for lo <= key <= hi."""
+        """Return list of (key,value) for lo <= key <= hi.
+        Linkedlist ensures we find first leaf and then iterate till high range met. without linkedlist, 
+        we would need to traverse up from root again and again
+        """
         results: List[Tuple[int, Any]] = []
         leaf = self.find_leaf(lo)
         # scan from found leaf, through linked leaves, until hi exceeded

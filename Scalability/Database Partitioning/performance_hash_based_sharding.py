@@ -13,7 +13,7 @@ def shard_worker(insert_queue: Queue, query_queue: Queue):
 
     # Process batched insert tasks
     while True:
-        task = insert_queue.get()
+        task = insert_queue.get() 
         if task == "DONE_INSERT":
             break
         # task is a list of (key, value) tuples
@@ -42,7 +42,7 @@ def generate_test_data(N=1000000):
 # Single-Tree Experiment
 # ---------------------------------------------------------
 def run_single_tree_experiment(keys, values, query_keys):
-    tree = BPlusTree(order=4)
+    tree = BPlusTree(order=4) #shard
 
     # Insert timing
     t1 = time.time()
@@ -78,20 +78,30 @@ def run_distributed_sharded_experiment(keys, values, query_keys, num_shards=3):
 
     t1 = time.time()
     # Partition data into shards
-    shard_kvs = [[] for _ in range(num_shards)]
+    shard_kvs = [[] for _ in range(num_shards)]  #[[(key1, val1)], [(key2, val2)], []]
     for k, v in zip(keys, values):
         shard_kvs[k % num_shards].append((k, v))
 
     # ---------------- Batched Inserts ----------------
     
-    for i in range(num_shards):
+    for i in range(num_shards): #1
         insert_queues[i].put(shard_kvs[i])       # send entire shard as batch
         insert_queues[i].put("DONE_INSERT")
 
     # Partition query keys into shards
-    shard_queries = [[] for _ in range(num_shards)]
+    shard_queries = [[] for _ in range(num_shards)] #[[5, 6, 7], [9, 10], []]
     for k in query_keys:
-        shard_queries[k % num_shards].append(k)
+        shard_queries[k % num_shards].append(k) #5, shard 2
+    #[1, 2, 3, 4, 5] keys
+    #number of shards  = 3
+    #shard 1 = [1, 4]
+    #shard 2 = [2]
+    #shard 3 = []
+
+    #1 % 3 = 1
+    #2 % 3 = 2
+    #4%3= 1
+    #[ [[1, 4] [] [] ] 
 
     # ---------------- Batched Queries ----------------
     for i in range(num_shards):

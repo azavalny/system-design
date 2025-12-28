@@ -120,7 +120,11 @@ def run_range_sharded_experiment(keys, values, query_ranges, num_shards=3):
 # ---------------------------------------------------------
 if __name__ == "__main__":
     N = 1000000
-    keys, values = generate_test_data(N)
+    keys, values = generate_test_data(N) 
+    #insert id between 100 and 200
+    #inseert id 100
+
+    #search betweem 100 and 200
 
     # Example: 100 random range queries of length ~1000 keys each
     query_ranges = []
