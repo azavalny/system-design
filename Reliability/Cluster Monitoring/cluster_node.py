@@ -10,7 +10,6 @@ import uvicorn
 
 # Configuration
 HEARTBEAT_INTERVAL = 2.0
-HEARTBEAT_TIMEOUT = 5.0
 
 # Cluster configuration: all nodes know about each other
 CLUSTER_NODES = {
