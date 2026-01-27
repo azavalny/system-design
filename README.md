@@ -280,6 +280,15 @@ Creates/deletes new app instances automatically to match load.
 
 **High availability comes at the cost of new features and expensive operations and mechanisms to add, and has large tradeoffs against scalability of a system.**
 
+Distributed systems are hard because they generally don't have shared memory where communication between nodes is passed through messages over an unreliable network with variable delays, as well as partial failures, unreliable clocks, and processing pauses causing issues. 
+
+A **partial failure** is where parts of a distributed system become broken in unpredictable ways:
+
+1. Sent packets or replies being lost or delayed (use timeouts or UDP for low latency systems)
+2. A node's clock may be out of sync with other nodes (use last write wins to fix clock skew + confidence intervals for clock reads)
+3. A process may pause for a substantial amount of time (e.g. garbage collector) and make the node declared dead by other nodes and restart (use fencing tokens)
+
+In distributed systems, nodes must communicate over a sometimes unreliable network, and major decisions cannot be made by a single node
 ---
 
 ## Fault Tolerance
@@ -289,10 +298,17 @@ Fault tolerance - automatically detect and recover from failures.
 ### Automatic Fault Detection Signals
 
 - Response - server fails to receive or respond to client
-- Timeout - server response duration takes longer than timeout duration
+- Timeout - server response duration takes longer than timeout duration (could be network or node failure we don't know)
 - Incorrect response - server's response incorrect
 - Crash - server dies
 - Arbitrary response - server response influenced by cybersecurity attack
+
+Byzantine Fault - a node tricks and deceives other nodes about the information it received for a malicious attack. Can be prevented with a 2/3 supermajority vote
+
+Safety - correctness of a system
+Liveness - eventual correctness of a system
+
+Safety should always hold in a distributed system and liveness should eventually happen
 
 ### Failover
 
