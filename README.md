@@ -270,11 +270,8 @@ Creates/deletes new app instances automatically to match load.
 # Reliability
 
 **Reliability** - system continues to function correctly and remain available for operations in the presence of partial failures. Can be measured as:
-$$
 
-\( P(\text{system working} \mid \text{time interval}) \)
-
-$$
+Probability of a system working given a time interval
 
 **Availability** - probability of system working correctly and available for operations at a given time.
 
@@ -488,13 +485,33 @@ Make sure system is stable under peak loads.
   * In doubt transaction - if coordinator crashes then transactions must wait and use their locks to hold up the database to block other transactions until the Coordinator goes back up
   * Transaction Coordinator acts as its own database of logs and is a single point of failure unless replicated
 
+
+* Fault tolerance - ability of a system to operate correctly when nodes fail
+
+
 * Consensus algorithms handle mutually incompatible operations and ensure:
   * Uniform Agreement among all the nodes
   * Integrity where no node decides twice
   * Validity where node takes responsibility over the value it proposed
   * Termination where every available node decides value assuming at least half the nodes are still alive
 
-* Fault tolerance - ability of a system to operate correctly when nodes fail
+  * E.g. Raft, Paxos, Zab, VSR are all total order broadcast algorithms that do repeated rounds of consensus using an epoch number to cast ballot
+    * Every time a current leader dies, a new vote is started to elect new leader with incremented epoch
+    * Total order broadcast implements linearizable atomic operations in a fault tolerant way
+    * Require strict majority over `n//2 + 1` of the nodes must agree
+      * 3 nodes minimum to tolerate 1 failure, 5 nodes for 2 failures
+    * Assume fixed set of nodes
+    * Timeouts used to detect failed nodes
+
+* Apache Zookeeper - tool for automatically providing consensus, failure detection, and membership service that distributed applications can use
+  * Replicates data across all nodes using fault tolerant total order broadcast algorithm to apply the same writes in the same order to keep replicas consistent
+  * Provides Compare and Set with a distributed lock or a lease with expiry time
+  * Provides total order of operations using a fencing token with a transaction ID and version number
+  * Uses heartbeats for failure detection and session timeout between clients and Zookeeper servers
+  * Uses change notifications to have clients subscribe to cluster changes
+  * Runs on a fixed number of nodes supporting a large number of clients
+
+* Linearizable compare and set, atomic transactions, total order broadcast, locks and leases, membership coordination services, and uniquess reduce to Consensus 
 
 --- 
 
