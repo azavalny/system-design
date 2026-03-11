@@ -455,7 +455,7 @@ Make sure system is stable under peak loads.
     * One read should have the same data after another read
     * Once new value is written then all reads following must return that same value
   * Use when you need hard uniqueness constraints, control when you read your own writes to avoid stale reads, and single leader replication with a lock. Multi leader and leaderless don't need linearizability
-  * Not guaranteed with strict quorum `w + r < n`
+  * Not guaranteed with strict quorum `w + r > n`
   * If an app requires linearizability and some replicas get disconnected and can't process requests then the app is unavailable
     * If an app dosen't, then each replica can process requests independently making app available with network defaults
     * If success of an app needs ordering of operations then you need strict consistency and linearizability
