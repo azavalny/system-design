@@ -270,8 +270,11 @@ Creates/deletes new app instances automatically to match load.
 # Reliability
 
 **Reliability** - system continues to function correctly and remain available for operations in the presence of partial failures. Can be measured as:
+$$
 
-- \( P(\text{system working} \mid \text{time interval}) \)
+\( P(\text{system working} \mid \text{time interval}) \)
+
+$$
 
 **Availability** - probability of system working correctly and available for operations at a given time.
 
@@ -289,6 +292,7 @@ A **partial failure** is where parts of a distributed system become broken in un
 3. A process may pause for a substantial amount of time (e.g. garbage collector) and make the node declared dead by other nodes and restart (use fencing tokens)
 
 In distributed systems, nodes must communicate over a sometimes unreliable network, and major decisions cannot be made by a single node
+
 ---
 
 ## Fault Tolerance
@@ -443,6 +447,56 @@ Make sure system is stable under peak loads.
 - **Back pressure** - slow down clients by rejecting requests within the system boundary and encourage exponential backoff (especially for calls to external services)
 
 ---
+# Consistency and Consensus
+
+* Consistency - all replica nodes display the same data at the same time
+* Consensus - algorithm for getting all nodes to agree
+* Eventual consistency - property that eventually all reads will return the same with inconsistencies self resolving
+
+* Linearizability - strong consistency property ensuring operations are instant, atomic, and appear as if one copy of the data exists on all nodes
+  * Or whether timings of requests & responses can be arrange in a valid sequential order
+    * One read should have the same data after another read
+    * Once new value is written then all reads following must return that same value
+  * Use when you need hard uniqueness constraints, control when you read your own writes to avoid stale reads, and single leader replication with a lock. Multi leader and leaderless don't need linearizability
+  * Not guaranteed with strict quorum `w + r < n`
+  * If an app requires linearizability and some replicas get disconnected and can't process requests then the app is unavailable
+    * If an app dosen't, then each replica can process requests independently making app available with network defaults
+    * If success of an app needs ordering of operations then you need strict consistency and linearizability
+  * Biggest tradeoff of being slow and less available
+
+* Causal Consistency - weak consistency property where cause and effect order is preserved across all replicas where operations with no causal relationships can appear in different orders
+  * If operation B could have been influenced by operation A, then every node must see A before B
+  * Unlike linearizability & strong consistency, available during network delays and failures
+  * Done with a sequence number or Lamport timestamps (counter, transaction id) to order events based on causal dependencies
+
+* Split brain - when we don't know who the leader is
+* Total order - all operations arrange in single global sequence
+
+* CAP Theorem - when network failures (partitions) occur, systems must choose between strict/strong consistentcy or availability
+
+* Total order broadcast - all messages are broadcasted/delivered to all nodes in the same order
+  * No messages lost for any node
+  * Messages delivered in the same order to each node
+  * Use to implement linearizable compare and set operations
+
+* 2 Phase Commit (2PC) - atomic commits for distributed database
+  * Phase 1 Coordinator asks all nodes if they're ready and if all say yes (ensures atomicity)
+  * Phase 2 Coordinator sends a commit request to all nodes. Otherwise, Coordinator sends an abort request to all ndoes
+
+  * Coordinator must retry forever once decision is made and one of the nodes go down. If Coordinator goes down all nodes have to wait.
+
+  * In doubt transaction - if coordinator crashes then transactions must wait and use their locks to hold up the database to block other transactions until the Coordinator goes back up
+  * Transaction Coordinator acts as its own database of logs and is a single point of failure unless replicated
+
+* Consensus algorithms handle mutually incompatible operations and ensure:
+  * Uniform Agreement among all the nodes
+  * Integrity where no node decides twice
+  * Validity where node takes responsibility over the value it proposed
+  * Termination where every available node decides value assuming at least half the nodes are still alive
+
+* Fault tolerance - ability of a system to operate correctly when nodes fail
+
+--- 
 
 # Databases
 
