@@ -58,5 +58,6 @@ Higher throughput means you can support more users greater than the peak.
 ![](../Performance/amdahls_gunther_law.png)
 
 **Amdahl's law** models concurrency speedup by using more threads. After an initial sharp speedup, you will notice diminishing returns because of the overhead of managing threads as well as CPU context switching.
+- Your max speedup, with infinite processors, cannot be more than 1/(% of your program that has to be sequential) which comes from 1/1-p
 
 **Gunther's law** extends Amdahl's law by taking into account coherence delay (caching of variables and syncing them across caches) and scaling dimension which gets slower to maintain as you add more threads.
