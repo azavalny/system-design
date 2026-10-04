@@ -10,6 +10,11 @@ Probability of a system working given a time interval
 
 - uptime / (uptime + downtime)
 - number of successful requests / total requests
+- e.g. three nines = 99.9% = ~8.8 hours of downtime/year, telephone networks designed for five nines = 99.999% = ~5.3 minutes/year
+
+**SLO (service level objective)** - availability goal
+
+**SLA (service level agreement)** - contract specifying the SLO and penalties for violating it
 
 **High availability comes at the cost of new features and expensive operations and mechanisms to add, and has large tradeoffs against scalability of a system.**
 
@@ -36,6 +41,20 @@ Fault tolerance - automatically detect and recover from failures.
 - Arbitrary response - server response influenced by cybersecurity attack
 
 Byzantine Fault - a node tricks and deceives other nodes about the information it received for a malicious attack. Can be prevented with a 2/3 supermajority vote
+
+Distinguish between a node fault (crash/deviating from algorithm) vs a network fault (dropping or significantly delaying messages)
+
+Avoid a single point of failure - node/network link whose fault leads to failure of the whole system
+
+### Failure Detectors
+
+Failure detector - algorithm to detect whether another node is faulty
+
+- e.g. Timeouts
+  - in an async or partially sync system a timeout doesn't tell us if a node crashed, as the message could have been delayed or lost in the network
+- **Perfect failure detector** - labels a node as faulty if and only if it has crashed
+  - only possible in a synchronous, crash stop system with no byzantine behavior
+- **Eventually perfect failure detector** - may temporarily label a node as crashed when it's correct (or correct when it's crashed), but eventually labels a node as crashed if and only if it has crashed
 
 Safety - correctness of a system
 Liveness - eventual correctness of a system
@@ -156,6 +175,10 @@ Make sure system is stable under peak loads.
    - Prevent transient errors (glitches, race conditions) from affecting availability
    - Exponential backoff + random wait times so requests don't get re-routed to the same instance
    - Use idempotency tokens (based on request id) so failed requests only happen once
+   - Retry semantics:
+     1. **At most once** - don't retry
+     2. **At least once** - retry until you get an acknowledgement
+     3. **Exactly once** - retry + idempotence or deduplication
 3. **Circuit breaker**
    - Track successes and failures
    - When failures cross a threshold, fall back to default/cached values and error messages

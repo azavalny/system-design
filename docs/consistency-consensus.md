@@ -1,5 +1,16 @@
 # Consistency and Consensus
 
+* System model requirements:
+
+| Problem | Must wait for communication | Requires synchrony |
+| ------- | --------------------------- | ------------------ |
+| Atomic commit | All participating nodes | Partially synchronous |
+| Consensus, total order broadcast, linearizable CAS | Quorum | Partially synchronous |
+| Linearizable get/set | Quorum | Asynchronous |
+| Eventual consistency, causal broadcast, FIFO broadcast | Local replica only | Asynchronous |
+
+Strength of assumptions increases from bottom to top
+
 How replicated nodes agree on data and operation order, the consistency models that emerge from those choices, and the algorithms that make agreement possible.
 
 * Consistency - all replica nodes display the same data at the same time
@@ -71,3 +82,67 @@ How replicated nodes agree on data and operation order, the consistency models t
   * Runs on a fixed number of nodes supporting a large number of clients
 
 * Linearizable compare and set, atomic transactions, total order broadcast, locks and leases, membership coordination services, and uniquess reduce to Consensus 
+
+* State machine replication - replicas use FIFO total order broadcast to deliver every write to all replicas
+  * Ensures each replica receives updates in same order
+  * Applying an update is deterministic so every replica ends up identical, but you have to wait for delivery through broadcast and can't update state immediately
+  * E.g. blockchains, smart contracts, serializable transactions
+  * Can use weaker broadcast if updates allow it:
+    * Causal broadcast if concurrent updates are commutative
+    * Reliable broadcast if all updates are commutative
+    * Best effort broadcast if all updates are commutative, idempotent, and message loss is tolerated
+
+* Consensus vs total order broadcast
+  * Consensus - several nodes agree on a single value
+  * Total order broadcast - all nodes agree on what the next message to deliver is
+  * An algorithm for one can be converted into the other
+  * Consensus decides the order of the replication log, the log feeds the state machine, and determinism makes every replica identical
+  * E.g. Paxos - single value consensus, Multi-Paxos - generalization to total order broadcast, Raft - total order broadcast
+  * A single leader that sequences all writes gives total order broadcast, but it's only fault tolerant if a new leader can be chosen safely when it fails, which itself needs consensus
+    * Manual failover - human operator chooses a new node as leader if it fails (e.g. planned outages)
+  * Assume partially synchronous, crash recovery system
+  * FLP result - there's no deterministic consensus algorithm that is guaranteed to terminate in an asynchronous crash-stop system, even if only one node can crash
+
+* Automatic leader election in consensus algorithms
+  * Failure detector (based on timeout) suspects the leader crashed or is unavailable
+  * Must prevent two leaders at the same time
+  * Term is incremented every time a leader election is started
+    * Guarantee <= 1 leader per term
+    * Each node can only vote once per term
+    * Requires a quorum of nodes to elect a new leader in a term
+  * Even after being elected, a leader can't assume it's still the leader (a newer term may exist), so it needs a quorum to acknowledge each message before deciding on it
+
+* Raft - every node is either a follower, candidate, or leader
+  * Each node is a follower on startup or after recovering from a crash
+  * When the current leader is unresponsive, a follower becomes a candidate in a new term:
+    * If it gets votes from a quorum, it becomes the new leader
+    * If it discovers a current leader or a node with a higher term number, it steps down to a follower (higher terms take precedence)
+    * If the election times out, it starts a new election with a higher term number
+  * If a leader discovers a higher term, it becomes a follower
+
+* Linearizability in practice
+  * Quorum reads and writes alone are not enough to ensure linearizability, because a later read could still hit a quorum that doesn't have the newest value yet
+  * ABD algorithm - quorum writes and reads with read repair
+    * Reader gets responses from a quorum and picks the value with the latest timestamp
+    * Before returning, the reader resends that value to replicas that didn't have it and waits until a quorum acknowledges
+    * Every subsequent quorum read will then see the new value
+  * Compare and swap - set x to new value only if its current value equals the expected old value
+    * Can't be made linearizable with quorums, you have to use total order broadcast and wait for delivery
+  * Linearizable compare and swap is equivalent to consensus and total order broadcast
+
+* Why eventual consistency
+  * Linearizability is very expensive to implement in practice with lots of messages and waiting for responses
+  * Leader can be a bottleneck limiting scalability
+  * If you can't contact a quorum of nodes, you can't process read/write operations limiting availability
+  * Eventual consistency - replicas process operations based on their local state. Eventually, all replicas will be in the same state but there's no guarantee how long it might take
+  * Strong eventual consistency:
+    1. every update to one replica will eventually be made to other replicas
+    2. any two replicas that processed the same set of updates are in the same state, even if they processed them in different orders
+    * No need to wait for network communication before processing an operation
+    * Causal broadcast can disseminate updates
+    * Concurrent update conflicts need to be resolved
+  * CRDT (conflict free replicated data type) - lets multiple users update concurrently without central coordination
+    * Merges changes automatically, guaranteeing all replicas eventually converge to the exact same state
+    * Don't require total order broadcast
+
+

@@ -38,6 +38,32 @@ Use quorum voting among nodes to validate read/write operations.
     - where **N** is number of nodes
     - **W** is write quorum
     - **R** is read quorum
+  - Write successful if acknowledged by w replicas, and we read from r replicas, so there's an overlap of at least 1 node that received the write and that we read from
+  - Reads can tolerate n - r unavailable replicas, writes n - w
+- **Majority quorum** - r = w = (n + 1) / 2 for odd n, so read and write quorums are both greater than half
+- If every write had to reach all replicas, one unavailable replica would stop the system. With a quorum, as long as enough nodes respond we're okay and return the value with the latest timestamp
+- Assuming replicas fail independently with probability p (real faults are often correlated):
+  - P(all n faulty) = p^n
+  - P(at least 1 faulty) = 1 - (1 - p)^n (complement of none failing)
+
+**Read after write consistency** - client can immediately read data it wrote itself
+
+Deduplicating retries requires the database to track requests it has already seen, otherwise a retried write after a lost acknowledgement gets applied twice
+
+- **Idempotence** - function that can be retried without deduplication
+  - e.g. incrementing a counter is not idempotent since the counter changes again
+  - e.g. adding an element to a set is idempotent as adding it a second time doesn't change the set
+- Have clients generate logical timestamps for their writes
+- **Tombstone** - marker for a removed element to remember it was deleted instead of erasing it
+
+Reconciling replicas:
+
+- **Read repair** - client sends the latest value back to replicas that returned an older timestamp
+- **Anti-entropy** - background process where replicas compare data and keep the records with the latest timestamp for each key
+- **Last writer wins** - use timestamps with a total order **(Lamport clock)** and keep the latest
+  - Data loss since concurrent writes with older timestamps get discarded
+- **Multi value register** - use timestamps with a partial order **(Vector clock)**
+  - Keep all concurrent updates as conflicting values for the application to resolve
 
 ## Database Sharding / Partitioning
 

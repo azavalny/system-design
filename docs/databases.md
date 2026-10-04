@@ -62,6 +62,24 @@ Graph is better for modeling many:many common and complex relationships with edg
 
 **gRPC** - RPC with Protobufs for encoding objects and supporting streams
 
+- e.g. calling a payment service like Stripe
+- RPC framework provides a stub on the client which sends the message to the service, which runs the function and sends a response back
+- **Marshalling** - RPC client encodes the function arguments to send to the RPC server, the server marshals its response, and the client unmarshals it
+- **Location transparency** - system hides where the resource is located, so a call to a remote function looks the same as a local function
+  - But lots of error cases a local call doesn't have if the message is lost, delayed, or the service crashes during the function call
+- Large enterprises use lots of server-to-server communication via service oriented architecture/microservices where large software is broken up into multiple services communicating via RPC
+- RPC provides interoperability between systems written in different languages using an Interface Definition Language (IDL) like **protocol buffers**
+
+> REST is resource oriented while RPC is function oriented
+
+REST requests the server perform an action on a specific server resource (CRUD) while RPC focuses on running functions as if they were local
+
+- RPC typically uses _POST_ to call a function, and REST uses GET/POST/PUT/DELETE on a resource URL
+- REST has a standardized set of server operations but RPC APIs don't
+- Both usually run over HTTP, REST typically with JSON/XML while RPC frameworks like gRPC use binary encodings like Protobuf over HTTP/2
+- REST can return multiple data formats while in RPC the data format is fixed and controlled by the server's interface definition
+- **REST systems must always be stateless, but RPC systems can be stateful or stateless**
+
 ## Transactions
 
 Transaction - group multiple reads and writes into a single logical unit.
@@ -98,6 +116,15 @@ Standard SQL isolation levels:
 3. **Serializable Snapshot Isolation (SSI)**
    - Abort transaction when serializability violation detected using optimistic conflict detection
    - Works great for low contention, commutative, atomic operations
+
+### MVCC
+
+**Multi version concurrency control (MVCC)** - database keeps multiple versions of each record tagged with the timestamp/transaction ID of the transaction that committed it
+
+- Each transaction reads from a snapshot at its start timestamp, ignoring writes committed after it and observing the most recent value committed at or before that timestamp
+- Consistent snapshot - snapshot that is consistent with causality
+- Readers don't block writers and writers don't block readers
+- e.g. PostgreSQL and MySQL (InnoDB) implement snapshot isolation using MVCC
 
 ## Race Conditions
 

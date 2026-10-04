@@ -5,6 +5,7 @@ System design, architecture, and databases explained from the _Software Architec
 ## Contents
 
 - [Fundamentals](docs/fundamentals.md)
+- [Distributed Systems](docs/distributed-systems.md)
 - [Performance](docs/performance.md)
 - [Scalability](docs/scalability.md)
 - [Scaling Databases](docs/scaling-databases.md)
